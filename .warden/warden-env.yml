@@ -1,0 +1,30 @@
+version: "3.5"
+
+services:
+    nginx:
+        volumes:
+          - ./.warden/nginx/custom.conf:/etc/nginx/default.d/custom.conf
+
+    php-fpm:
+        volumes:
+            - '~/.ssh/:/home/www-data/.ssh/'
+            - './:/var/www/html/'
+        extra_hosts:
+            - app.bebe9-etl.test:${TRAEFIK_ADDRESS:-0.0.0.0}
+
+    php-debug:
+        extra_hosts:
+            - app.bebe9-etl.test:${TRAEFIK_ADDRESS:-0.0.0.0}
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        hostname: ${WARDEN_ENV_NAME}-phpmyadmin
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.${WARDEN_ENV_NAME}-phpmyadmin.tls=true
+            - traefik.http.routers.${WARDEN_ENV_NAME}-phpmyadmin.rule=Host(`phpmyadmin.${TRAEFIK_DOMAIN}`)
+            - traefik.docker.network=${WARDEN_ENV_NAME}_default
+        environment:
+            - PMA_HOSTS=db
+            - PMA_USER=wordpress
+            - PMA_PASSWORD=wordpress
